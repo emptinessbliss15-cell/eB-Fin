@@ -14,7 +14,7 @@ Open http://127.0.0.1:4173. Choose **Explore demo** (sample data in memory), or 
 
 ## Features
 
-- Separate personal/business workspaces, one currency each; account tree and app bar.
+- Separate personal/business workspaces, one currency each; account tree and app bar. Appearance follows the browser by default, with Light and Dark overrides in Settings.
 - Accounts/opening balances; income/expense/transfer CRUD; posted/pending state; review flags; notes.
 - Search, filters, sorting, pagination, monthly cash flow and category spending.
 - Categories and monthly expense budgets; light/dark themes and grid density.
