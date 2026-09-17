@@ -34,7 +34,7 @@ This is an owner-only cash-flow tracker. Live bank sync, team sharing, invoicing
 
 ## Hosting
 
-Serve `public/` on any static HTTPS host. Set the Supabase Auth Site URL and redirect allowlist to the final hostname before relying on confirmation email links. Configure SMTP as needed for your users.
+Serve `public/` on any static HTTPS host. The included `wrangler.jsonc` configures `npx wrangler deploy` to publish `./public` as Cloudflare Workers Static Assets. Set the Supabase Auth Site URL and redirect allowlist to the final hostname before relying on confirmation email links. Configure SMTP as needed for your users.
 
 Cloudflare monitoring is not configured; `deployment-status.json` deliberately reports `unknown`. Point `CFstatus.init` at a real server status endpoint when hosting is connected. Never put Cloudflare API secrets in the client.
 

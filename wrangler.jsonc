@@ -1,0 +1,8 @@
+{
+  "$schema": "https://json.schemastore.org/wrangler.json",
+  "name": "eb-finance",
+  "compatibility_date": "2026-09-17",
+  "assets": {
+    "directory": "./public"
+  }
+}
