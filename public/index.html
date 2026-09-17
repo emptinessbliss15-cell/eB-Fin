@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="Personal and small-business finances in your eBliss workspace.">
+<title>eB Finance</title>
+<link rel="icon" href="./img/favicon48.png"><link rel="stylesheet" href="./governance.css">
+<link rel="stylesheet" href="./vendor/vanillagrid.css"><link rel="stylesheet" href="./vendor/hcg-autocomplete.css"><link rel="stylesheet" href="./finance.css">
+<script src="./vendor/supabase.js"></script><script src="./vendor/vanillagrid.js"></script><script src="./vendor/hcg-autocomplete.js"></script>
+</head><body><div class="eb-shell">
+<header id="header" class="eb-header"><div class="eb-header-inner">
+ <details class="eb-logo-menu"><summary aria-label="eBliss tools"><img class="eb-logo" src="./img/eBLogo.png" alt="eBliss" width="40" height="40"></summary>
+ <div class="eb-logo-menu-panel"><button id="refreshApp">Refresh app</button><button id="debugApp">Debug</button><div class="eb-menu-separator"></div><strong class="eb-menu-label">Test status</strong><button id="testStatusSuccess">Success</button><button id="testStatusWarn">Warning</button><button id="testStatusError">Error</button><div class="eb-menu-separator"></div><strong class="eb-menu-label">Test components</strong><button id="testComboBox">Combo box</button></div></details>
+ <div class="eb-brand">eB Finance</div><div class="eb-app-name">Personal &amp; business</div>
+ <div class="eb-row"><div id="operatingContext" class="eb-operating-context" aria-label="Operating context"><select id="workspace" aria-label="Finance workspace"><option value="">No workspace</option></select></div><div id="cf-status" aria-label="Cloudflare deployment status"></div><button id="refresh" type="button">Refresh</button><div id="auth"></div></div>
+</div></header>
+<div id="status"></div>
+<nav id="appBar" class="eb-app-bar" aria-label="Application"><button data-view="overview">◫ Overview</button><button data-view="transactions">☷ Transactions</button><button data-view="accounts">▣ Accounts</button><button data-view="budgets">◴ Budgets</button><button data-view="categories">⌘ Categories</button><button data-view="connections">⇄ Bank connections</button><button data-view="settings">⚙ Settings</button></nav>
+<div id="demoBanner" class="demo-banner" hidden><span><strong>Demo workspace</strong> · Sample data; changes last only until you leave or reload.</span><button id="exitDemo">Exit demo</button></div>
+<div class="finance-layout"><aside class="finance-tree" aria-label="Finance navigation"><div class="tree-heading">WORKSPACES <button id="newWorkspace" title="New workspace" aria-label="New workspace">+</button></div><div id="tree"></div><div class="tree-note">One clear view of your money.<br>One workspace at a time.</div></aside><div id="splitter" role="separator" aria-label="Resize navigation" aria-orientation="vertical" aria-valuemin="160" aria-valuemax="420" aria-valuenow="230" tabindex="0"></div>
+<main id="main" class="finance-main">
+<section id="welcome" class="welcome"><div class="eyebrow">YOUR MONEY, IN CONTEXT</div><h1>A little more clarity.<br>A lot more control.</h1><p>Keep personal and business finances organized in one familiar workspace. Follow your accounts, review transactions, and plan the month ahead.</p><div class="welcome-actions"><button id="openAuth" class="primary">Sign in to get started</button><button id="enterDemo">Explore demo →</button></div><div class="welcome-features"><span>▣ Separate workspaces</span><span>☷ Flexible transaction grids</span><span>◴ Monthly budgets</span></div><p class="muted small">Your financial records are private to your login.</p></section>
+<section id="workspaceEmpty" class="empty-state" hidden><h1>Your finances start here.</h1><p>Create a personal or business workspace, then add your first account.</p><button id="firstWorkspace" class="primary">Create workspace</button></section>
+<section id="workspaceContent" hidden>
+<div class="page-heading"><div><div id="breadcrumb" class="eyebrow"></div><h1 id="viewTitle">Overview</h1><p id="viewSubtitle" class="muted"></p></div><div id="pageActions" class="toolbar"></div></div>
+<div id="content"></div>
+</section>
+</main></div></div>
+<noscript>This app requires JavaScript.</noscript><script type="module" src="./app.js"></script>
+</body></html>

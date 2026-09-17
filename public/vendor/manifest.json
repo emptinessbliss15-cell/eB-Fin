@@ -1,0 +1,17 @@
+{
+  "governance": {
+    "repository": "https://github.com/emptinessbliss15-cell/eB-Holarchy",
+    "commit": "24da206bfd08b9cb022a907f2f94d2b562d4ce70"
+  },
+  "supabaseVersion": "2.116.0",
+  "files": {
+    "GOVERNANCE-LICENSE": "a7856e07ca3309addf57b680c0e2b3e182284d94232da857657cc87939ea8efd",
+    "hcg-autocomplete.css": "48945c59efc66f9a7468d0e4a6e383592806204096df2eb03b8a0e94d726191e",
+    "hcg-autocomplete.js": "0326d5bf45ee9a239a728618f32d0cd77984814603e4388357c5698c8cd85e11",
+    "SUPABASE-LICENSE": "334dd6820e2eaeab2064e7c59001b810566728a28a41a7c1dbf69bbee17d0936",
+    "supabase.js": "84ee9bf45695c1dd3ba1595b6bcfb0f09672434631351ffc8ebe9140545d5ff6",
+    "SUPABASE.json": "1ffce93d61a85fea5d8c5823ccf76339185058148a0905c0403f96f3806926ca",
+    "vanillagrid.css": "afed90e74ace2dc16b419a68d040b93f30b9d40961a6cd06207816cf3b912751",
+    "vanillagrid.js": "8a082e7f48a8a78620c09387416ceb885ccdfddb0aa54d10aa54dd549d6b98c3"
+  }
+}
