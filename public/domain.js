@@ -37,6 +37,10 @@ export function bucketBalances(accounts, transactions, allocations, asOf=today()
     if(a.from_category_id)buckets.set(a.from_category_id,(buckets.get(a.from_category_id)||0)-amount);
     if(a.to_category_id)buckets.set(a.to_category_id,(buckets.get(a.to_category_id)||0)+amount);
   }
+  // An expense uses its category bucket. Any unfunded portion is covered by
+  // Unassigned, so an unallocated historical expense does not create a
+  // negative bucket and falsely leave the original cash in Unassigned.
+  for(const [id,value] of buckets) buckets.set(id,Math.max(0,value));
   const assigned=[...buckets.values()].reduce((n,v)=>n+v,0);
   return {cash,unassigned:cash-assigned,buckets};
 }

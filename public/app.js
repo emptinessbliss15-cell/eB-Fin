@@ -98,7 +98,7 @@ function renderBuckets(){
  const state=bucketBalances(rows('accounts'),rows('transactions'),rows('allocations'));
  const summary=el('div','','metrics');for(const [label,value] of [['In accounts',state.cash],['Unassigned',state.unassigned],['In buckets',state.cash-state.unassigned]]){const card=el('section','','metric');card.append(el('div',label,'metric-label'),el('div',fmt(value),'metric-value'));summary.append(card);}
  $('content').append(summary);
- const p=panel('Available by bucket');p.append(el('p','Unassigned receives all posted income and opening balances. Spending reduces its expense bucket; uncategorized spending reduces Unassigned. Account transfers do not change buckets.','muted small'));
+ const p=panel('Available by bucket');p.append(el('p','Unassigned receives posted income and opening balances. Categorized spending uses its bucket first, then Unassigned when that bucket needs more. Account transfers do not change buckets.','muted small'));
  const list=el('div','','bucket-list'),root=el('div','','bucket-row');root.append(el('strong','Unassigned'),el('span',fmt(state.unassigned),state.unassigned<0?'bucket-negative':''));root.title='System bucket · cannot be deleted';list.append(root);
  const cats=rows('categories').filter(c=>c.kind==='expense');
  const total=(id,seen=new Set())=>{if(seen.has(id))return 0;seen.add(id);return (state.buckets.get(id)||0)+cats.filter(c=>c.parent_category_id===id).reduce((sum,c)=>sum+total(c.id,seen),0);};

@@ -12,6 +12,15 @@ test('bucket transfers preserve account totals and spending consumes its categor
  assert.equal(result.buckets.get('food'),10500);assert.equal(result.buckets.get('rent'),5000);
  assert.equal(result.unassigned+[...result.buckets.values()].reduce((a,b)=>a+b,0),result.cash);
 });
+test('historical categorized spending draws unfunded amount from Unassigned',()=>{
+ const result=bucketBalances([{id:'a',opening_balance_cents:1551}],
+  [{account_id:'a',amount_cents:-1330,kind:'expense',category_id:'food',status:'posted',date:'2026-09-01'}],[],'2026-09-28');
+ assert.equal(result.cash,221);assert.equal(result.unassigned,221);assert.equal(result.buckets.get('food'),0);
+ const funded=bucketBalances([{id:'a',opening_balance_cents:1551}],
+  [{account_id:'a',amount_cents:-1330,kind:'expense',category_id:'food',status:'posted',date:'2026-09-01'}],
+  [{from_category_id:null,to_category_id:'food',amount_cents:1500}],'2026-09-28');
+ assert.equal(funded.buckets.get('food'),170);assert.equal(funded.unassigned,51);
+});
 test('decimal money parsing is exact and rejects ambiguous values',()=>{
  assert.equal(cents('12.34'),1234);assert.equal(cents('-0.29'),-29);assert.equal(cents('0.1'),10);
  for(const value of ['1.005','1e3','1,000','$12','Infinity',''])assert.throws(()=>cents(value));
