@@ -20,6 +20,10 @@ test('historical categorized spending draws unfunded amount from Unassigned',()=
   [{account_id:'a',amount_cents:-1330,kind:'expense',category_id:'food',status:'posted',date:'2026-09-01'}],
   [{from_category_id:null,to_category_id:'food',amount_cents:1500}],'2026-09-28');
  assert.equal(funded.buckets.get('food'),170);assert.equal(funded.unassigned,51);
+ const later=bucketBalances([{id:'a',opening_balance_cents:1551}],
+  [{account_id:'a',amount_cents:-1330,kind:'expense',category_id:'food',status:'posted',date:'2026-09-01'}],
+  [{from_category_id:null,to_category_id:'food',amount_cents:200,covered_deficit_cents:1330}],'2026-09-28');
+ assert.equal(later.buckets.get('food'),200);assert.equal(later.unassigned,21);
 });
 test('decimal money parsing is exact and rejects ambiguous values',()=>{
  assert.equal(cents('12.34'),1234);assert.equal(cents('-0.29'),-29);assert.equal(cents('0.1'),10);

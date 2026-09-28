@@ -115,10 +115,11 @@ function moveMoneyForm(){
   const amount=cents(v.amount);if(amount<=0)throw new Error('Enter an amount greater than zero.');if(v.from===v.to)throw new Error('Choose two different buckets.');
   const state=bucketBalances(rows('accounts'),rows('transactions'),rows('allocations'));
   if(amount>(v.from?state.buckets.get(v.from)||0:state.unassigned))throw new Error('That bucket does not have enough available.');
-  if(demo){data.allocations.push({id:crypto.randomUUID(),workspace_id:workspaceId,from_category_id:v.from||null,to_category_id:v.to||null,amount_cents:amount});render();}
+  if(demo){const rawDestination=v.to?rawBucketBalance(v.to):0;data.allocations.push({id:crypto.randomUUID(),workspace_id:workspaceId,from_category_id:v.from||null,to_category_id:v.to||null,amount_cents:amount,covered_deficit_cents:Math.max(0,-rawDestination)});render();}
   else{await moveBetweenBuckets(workspaceId,v.from||null,v.to||null,amount);await refresh();}eBStatus.success('Money moved between buckets.');
  },{description:'This changes the purpose of money, not an account balance.'});
 }
+function rawBucketBalance(id){return rows('allocations').reduce((n,a)=>n+(a.to_category_id===id?Number(a.amount_cents)+Number(a.covered_deficit_cents||0):0)-(a.from_category_id===id?Number(a.amount_cents):0),0)+rows('transactions').filter(t=>t.category_id===id&&t.kind==='expense'&&t.status==='posted'&&t.date<=today()).reduce((n,t)=>n+Number(t.amount_cents),0);}
 function renderOverview(){
  const ts=rows('transactions'),accountBalances=balances(rows('accounts'),ts),summary=totals(ts,month);const metrics=el('div','','metrics');
  for(const [label,value,note]of[['Net balance',[...accountBalances.values()].reduce((a,b)=>a+b,0),'All accounts · posted through today'],['Income',summary.income,'Selected month · posted through today'],['Spending',summary.spending,'Selected month · excludes transfers'],['Net cash flow',summary.net,'Income less spending']]){const card=el('section','','metric');card.append(el('div',label,'metric-label'),el('div',fmt(value),'metric-value'),el('div',note,'metric-note'));metrics.append(card);}

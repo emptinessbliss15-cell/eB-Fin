@@ -35,7 +35,7 @@ export function bucketBalances(accounts, transactions, allocations, asOf=today()
   for(const a of allocations){
     const amount=Number(a.amount_cents);
     if(a.from_category_id)buckets.set(a.from_category_id,(buckets.get(a.from_category_id)||0)-amount);
-    if(a.to_category_id)buckets.set(a.to_category_id,(buckets.get(a.to_category_id)||0)+amount);
+    if(a.to_category_id)buckets.set(a.to_category_id,(buckets.get(a.to_category_id)||0)+amount+Number(a.covered_deficit_cents||0));
   }
   // An expense uses its category bucket. Any unfunded portion is covered by
   // Unassigned, so an unallocated historical expense does not create a
