@@ -26,6 +26,20 @@ export function totals(transactions, month, asOf=today()) {
   const spending=-rows.filter(t=>t.kind==='expense').reduce((n,t)=>n+Number(t.amount_cents),0);
   return {income,spending,net:income-spending};
 }
+// Null represents Unassigned; allocations never change account balances.
+export function bucketBalances(accounts, transactions, allocations, asOf=today()) {
+  const cash=[...balances(accounts,transactions,asOf).values()].reduce((n,v)=>n+v,0);
+  const buckets=new Map();
+  for(const t of transactions)if(t.kind==='expense'&&t.status==='posted'&&t.date<=asOf&&t.category_id)
+    buckets.set(t.category_id,(buckets.get(t.category_id)||0)+Number(t.amount_cents));
+  for(const a of allocations){
+    const amount=Number(a.amount_cents);
+    if(a.from_category_id)buckets.set(a.from_category_id,(buckets.get(a.from_category_id)||0)-amount);
+    if(a.to_category_id)buckets.set(a.to_category_id,(buckets.get(a.to_category_id)||0)+amount);
+  }
+  const assigned=[...buckets.values()].reduce((n,v)=>n+v,0);
+  return {cash,unassigned:cash-assigned,buckets};
+}
 export function parseCSV(text) {
   text=text.replace(/^\uFEFF/,'');
   const rows=[];let row=[],field='',quoted=false;

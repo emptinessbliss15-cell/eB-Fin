@@ -3,12 +3,12 @@ import {eBStatus} from './components/eBStatus.js';
 import {CFstatus} from './components/CFstatus.js';
 import {createEBGrid} from './components/eBGrid.js';
 import {createEBComboBox} from './components/eBComboBox.js';
-import {db,authAPI,loadData,save,remove,importTransactions} from './data.js';
-import {cents,money,today,dateValid,balances,totals,importRows,exportCSV} from './domain.js';
+import {db,authAPI,loadData,save,remove,importTransactions,moveBetweenBuckets} from './data.js';
+import {cents,money,today,dateValid,balances,totals,bucketBalances,importRows,exportCSV} from './domain.js';
 import {demoData} from './demo.js';
 
 const $=id=>document.getElementById(id);
-const empty=()=>({workspaces:[],accounts:[],categories:[],transactions:[],budgets:[]});
+const empty=()=>({workspaces:[],accounts:[],categories:[],transactions:[],budgets:[],allocations:[]});
 let data=empty(),session=null,demo=false,workspaceId='',view='overview',accountId='',grid=null,epoch=0,loading=false;
 let month=today().slice(0,7),search='',kindFilter='',reviewFilter='',statusFilter='';
 const workspace=()=>data.workspaces.find(w=>w.id===workspaceId);
@@ -43,7 +43,7 @@ async function mutate(table,row,id,deleting=false){
  if(!demo&&!session)throw new Error('Please sign in first.');
  const version=epoch;
  if(demo){
-  if(deleting){if(['accounts','categories'].includes(table)&&data.transactions.some(t=>t.account_id===id||t.to_account_id===id||t.category_id===id)||table==='categories'&&data.budgets.some(b=>b.category_id===id))throw new Error('This record is in use. Remove its references first.');data[table]=data[table].filter(r=>r.id!==id);}
+  if(deleting){if(['accounts','categories'].includes(table)&&data.transactions.some(t=>t.account_id===id||t.to_account_id===id||t.category_id===id)||table==='categories'&&(data.budgets.some(b=>b.category_id===id)||data.allocations.some(a=>a.from_category_id===id||a.to_category_id===id)))throw new Error('This record is in use. Remove its references first.');data[table]=data[table].filter(r=>r.id!==id);}
   else if(id)data[table]=data[table].map(r=>r.id===id?{...r,...row}:r);
   else data[table].push({...row,id:crypto.randomUUID()});
  }else{
@@ -70,7 +70,7 @@ function navigate(next,account=''){view=next;accountId=account;search='';render(
 function renderTree(){
  const tree=$('tree');tree.replaceChildren();
  for(const w of data.workspaces){const section=el('div','','tree-workspace');const root=button((w.kind==='personal'?'◉ ':'▣ ')+w.name,()=>switchWorkspace(w.id),'tree-node');root.setAttribute('aria-current',workspaceId===w.id?'page':'false');section.append(root);
-  if(workspaceId===w.id){const children=el('div','','tree-children');for(const [v,t]of[['overview','Overview'],['transactions','All transactions'],['budgets','Monthly budgets']]){const b=button(t,()=>navigate(v),'tree-node');b.setAttribute('aria-current',view===v&&!accountId?'page':'false');children.append(b);}
+  if(workspaceId===w.id){const children=el('div','','tree-children');for(const [v,t]of[['overview','Overview'],['transactions','All transactions'],['buckets','Buckets'],['budgets','Monthly budgets']]){const b=button(t,()=>navigate(v),'tree-node');b.setAttribute('aria-current',view===v&&!accountId?'page':'false');children.append(b);}
    const detail=el('details');detail.open=true;detail.append(el('summary','Accounts'));for(const a of rows('accounts')){const b=button(a.name,()=>navigate('transactions',a.id),'tree-node');b.setAttribute('aria-current',accountId===a.id?'page':'false');detail.append(b);}detail.append(button('+ Add account',()=>accountForm(),'tree-node'));children.append(detail);section.append(children);}
   tree.append(section);
  }
@@ -84,14 +84,40 @@ function render(){
  renderTree();document.querySelectorAll('[data-view]').forEach(b=>b.setAttribute('aria-current',b.dataset.view===view?'page':'false'));
  if(!workspace())return;
  $('breadcrumb').textContent=(workspace().kind==='business'?'BUSINESS':'PERSONAL')+' / '+workspace().name;
- const titles={overview:['Overview','A clear picture of your money.'],transactions:['Transactions','Review, categorize, and keep your books in order.'],accounts:['Accounts','Your accounts, together in one place.'],budgets:['Monthly budgets','Give every category a little direction.'],categories:['Categories','Organize income and expenses your way.'],connections:['Bank connections','Manual today. Connected when you are ready.'],settings:['Settings','Make this workspace your own.']};
+ const titles={overview:['Overview','A clear picture of your money.'],transactions:['Transactions','Review, categorize, and keep your books in order.'],accounts:['Accounts','Your accounts, together in one place.'],buckets:['Buckets','Give your money a purpose.'],budgets:['Monthly budgets','Set spending targets for the month.'],categories:['Categories','Organize income and expenses your way.'],connections:['Bank connections','Manual today. Connected when you are ready.'],settings:['Settings','Make this workspace your own.']};
  $('viewTitle').textContent=accountId?rows('accounts').find(a=>a.id===accountId)?.name||'Transactions':titles[view][0];$('viewSubtitle').textContent=titles[view][1];$('pageActions').replaceChildren();$('content').replaceChildren();
  if(['overview','transactions','budgets'].includes(view)){const date=el('input');date.type='month';date.value=month;date.setAttribute('aria-label','Reporting month');date.onchange=()=>{if(date.value){month=date.value;render();}};$('pageActions').append(date);}
  if(['overview','transactions'].includes(view))$('pageActions').append(button('+ Transaction',()=>transactionForm(),'primary'));
  if(view==='accounts')$('pageActions').append(button('+ Account',()=>accountForm(),'primary'));
  if(view==='categories')$('pageActions').append(button('+ Category',()=>categoryForm(),'primary'));
  if(view==='budgets')$('pageActions').append(button('+ Budget',()=>budgetForm(),'primary'));
- ({overview:renderOverview,transactions:renderTransactions,accounts:renderAccounts,budgets:renderBudgets,categories:renderCategories,connections:renderConnections,settings:renderSettings})[view]();
+ if(view==='buckets')$('pageActions').append(button('Move money',moveMoneyForm,'primary'),button('+ Bucket',()=>categoryForm()));
+ ({overview:renderOverview,transactions:renderTransactions,accounts:renderAccounts,buckets:renderBuckets,budgets:renderBudgets,categories:renderCategories,connections:renderConnections,settings:renderSettings})[view]();
+}
+function renderBuckets(){
+ const state=bucketBalances(rows('accounts'),rows('transactions'),rows('allocations'));
+ const summary=el('div','','metrics');for(const [label,value] of [['In accounts',state.cash],['Unassigned',state.unassigned],['In buckets',state.cash-state.unassigned]]){const card=el('section','','metric');card.append(el('div',label,'metric-label'),el('div',fmt(value),'metric-value'));summary.append(card);}
+ $('content').append(summary);
+ const p=panel('Available by bucket');p.append(el('p','Unassigned receives all posted income and opening balances. Spending reduces its expense bucket; uncategorized spending reduces Unassigned. Account transfers do not change buckets.','muted small'));
+ const list=el('div','','bucket-list'),root=el('div','','bucket-row');root.append(el('strong','Unassigned'),el('span',fmt(state.unassigned),state.unassigned<0?'bucket-negative':''));root.title='System bucket · cannot be deleted';list.append(root);
+ const cats=rows('categories').filter(c=>c.kind==='expense');
+ const total=(id,seen=new Set())=>{if(seen.has(id))return 0;seen.add(id);return (state.buckets.get(id)||0)+cats.filter(c=>c.parent_category_id===id).reduce((sum,c)=>sum+total(c.id,seen),0);};
+ const children=(parent,host,depth=0)=>{for(const c of cats.filter(c=>(c.parent_category_id||null)===parent).sort((a,b)=>a.name.localeCompare(b.name))){const amount=total(c.id),node=el('div','','bucket-row'),name=button(c.name,()=>categoryForm(c),'bucket-name');node.style.marginLeft=(depth*16)+'px';node.append(name,el('span',fmt(amount),amount<0?'bucket-negative':''));node.title='Available including child buckets · Select name to edit';host.append(node);children(c.id,host,depth+1);}};
+ children(null,list);
+ // A deleted parent should be prevented by the database. Still display orphaned legacy rows.
+ for(const c of cats.filter(c=>c.parent_category_id&&!cats.some(p=>p.id===c.parent_category_id))){const node=el('div','','bucket-row');node.append(button(c.name,()=>categoryForm(c),'bucket-name'),el('span',fmt(total(c.id))));list.append(node);}
+ p.append(list);if(!rows('categories').some(c=>c.kind==='expense'))p.append(button('Create a bucket',()=>categoryForm()));$('content').append(p);
+}
+function moveMoneyForm(){
+ const options=[['','Unassigned'],...rows('categories').filter(c=>c.kind==='expense').map(c=>[c.id,c.name])];
+ if(options.length<2){eBStatus.info('Create an expense bucket first.');categoryForm();return;}
+ form('Move money between buckets',[{name:'from',label:'From',options},{name:'to',label:'To',options,value:options[1][0]},{name:'amount',label:`Amount (${workspace().currency})`,required:true,value:''}],async v=>{
+  const amount=cents(v.amount);if(amount<=0)throw new Error('Enter an amount greater than zero.');if(v.from===v.to)throw new Error('Choose two different buckets.');
+  const state=bucketBalances(rows('accounts'),rows('transactions'),rows('allocations'));
+  if(amount>(v.from?state.buckets.get(v.from)||0:state.unassigned))throw new Error('That bucket does not have enough available.');
+  if(demo){data.allocations.push({id:crypto.randomUUID(),workspace_id:workspaceId,from_category_id:v.from||null,to_category_id:v.to||null,amount_cents:amount});render();}
+  else{await moveBetweenBuckets(workspaceId,v.from||null,v.to||null,amount);await refresh();}eBStatus.success('Money moved between buckets.');
+ },{description:'This changes the purpose of money, not an account balance.'});
 }
 function renderOverview(){
  const ts=rows('transactions'),accountBalances=balances(rows('accounts'),ts),summary=totals(ts,month);const metrics=el('div','','metrics');
@@ -132,7 +158,7 @@ function renderCategories(){
 }
 function workspaceForm(){form('New workspace',[{name:'name',label:'Workspace name',required:true,maxLength:100},{name:'kind',label:'Workspace type',options:[['personal','Personal'],['business','Small business']]},{name:'currency',label:'Currency',options:['USD','CAD','EUR','GBP','AUD','NZD'].map(c=>[c,c])}],async values=>{await mutate('workspaces',{...values,name:values.name.trim()});workspaceId=data.workspaces.findLast(w=>w.name===values.name.trim())?.id||data.workspaces[0]?.id;view='overview';render();},{description:'Each workspace has its own accounts, categories, and currency. This version is private to your login.'});}
 function accountForm(a){if(!workspace())return;form(a?'Edit account':'Add account',[{name:'name',label:'Account name',required:true,maxLength:100,value:a?.name},{name:'kind',label:'Account type',value:a?.kind,options:['checking','savings','credit','cash','loan','investment'].map(k=>[k,k[0].toUpperCase()+k.slice(1)])},{name:'institution',label:'Institution (optional)',value:a?.institution,maxLength:100},{name:'opening',label:`Opening balance (${workspace().currency})`,required:true,value:((a?.opening_balance_cents||0)/100).toFixed(2)}],async v=>{const balance=cents(v.opening);await mutate('accounts',{workspace_id:workspaceId,name:v.name.trim(),kind:v.kind,institution:v.institution.trim(),opening_balance_cents:balance},a?.id);},{description:'Use the balance immediately before the earliest transaction you will enter. Enter debt owed on credit cards or loans as a negative amount.'});}
-function categoryForm(c){form(c?'Edit category':'Add category',[{name:'name',label:'Category name',required:true,maxLength:80,value:c?.name},{name:'kind',label:'Type',value:c?.kind,options:[['expense','Expense'],['income','Income']]}],async v=>{if(data.categories.some(x=>x.workspace_id===workspaceId&&x.name===v.name.trim()&&x.kind===v.kind&&x.id!==c?.id))throw new Error('That category already exists.');await mutate('categories',{workspace_id:workspaceId,name:v.name.trim(),kind:v.kind},c?.id);});}
+function categoryForm(c){const parents=rows('categories').filter(x=>x.kind==='expense'&&x.id!==c?.id);form(c?'Edit category':'Add category',[{name:'name',label:'Category name',required:true,maxLength:80,value:c?.name},{name:'kind',label:'Type',value:c?.kind,options:[['expense','Expense'],['income','Income']]},{name:'parent_category_id',label:'Parent bucket',options:[['','Top level'],...parents.map(x=>[x.id,x.name])],value:c?.parent_category_id||''}],async v=>{if(v.kind==='expense'&&v.name.trim().toLowerCase()==='unassigned')throw new Error('Unassigned is the system bucket.');if(v.kind==='income'&&v.parent_category_id)throw new Error('Only expense buckets can be nested.');if(data.categories.some(x=>x.workspace_id===workspaceId&&x.name===v.name.trim()&&x.kind===v.kind&&x.id!==c?.id))throw new Error('That category already exists.');await mutate('categories',{workspace_id:workspaceId,name:v.name.trim(),kind:v.kind,parent_category_id:v.parent_category_id||null},c?.id);});}
 function transactionForm(t){
  if(!rows('accounts').length){eBStatus.info('Add an account before recording transactions.');accountForm();return;}
  const options=rows('accounts').map(a=>[a.id,a.name]);

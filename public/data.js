@@ -1,6 +1,6 @@
 import { config } from './config.js';
 export const db=window.supabase.createClient(config.url,config.publishableKey);
-export const tables=['workspaces','accounts','categories','transactions','budgets'];
+export const tables=['workspaces','accounts','categories','transactions','budgets','allocations'];
 export async function readAll(name,userId) {
   let all=[];
   for(let offset=0;;offset+=1000){
@@ -17,6 +17,10 @@ export async function remove(name,id) { const {data,error}=await db.from('fin_'+
 export async function importTransactions(rows) {
   const {data,error}=await db.from('fin_transactions').upsert(rows,{onConflict:'workspace_id,import_key',ignoreDuplicates:true}).select('id');
   if(error)throw error;return data.length;
+}
+export async function moveBetweenBuckets(workspaceId,fromCategoryId,toCategoryId,amountCents) {
+  const {error}=await db.rpc('fin_move_between_buckets',{p_workspace_id:workspaceId,p_from_category_id:fromCategoryId,p_to_category_id:toCategoryId,p_amount_cents:amountCents});
+  if(error)throw error;
 }
 // Governance's auth component receives its existing API contract, backed by the eBliss project.
 export const authAPI={

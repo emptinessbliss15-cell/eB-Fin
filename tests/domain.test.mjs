@@ -1,6 +1,17 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {cents,balances,totals,importRows,parseCSV,exportCSV,dateValid} from '../public/domain.js';
+import {cents,balances,totals,bucketBalances,importRows,parseCSV,exportCSV,dateValid} from '../public/domain.js';
+test('bucket transfers preserve account totals and spending consumes its category',()=>{
+ const accounts=[{id:'checking',opening_balance_cents:0}];
+ const transactions=[{account_id:'checking',amount_cents:100000,kind:'income',status:'posted',date:'2026-09-01'},
+  {account_id:'checking',amount_cents:-4500,kind:'expense',category_id:'food',status:'posted',date:'2026-09-02'}];
+ const allocations=[{from_category_id:null,to_category_id:'food',amount_cents:20000},
+  {from_category_id:'food',to_category_id:'rent',amount_cents:5000}];
+ const result=bucketBalances(accounts,transactions,allocations,'2026-09-28');
+ assert.equal(result.cash,95500);assert.equal(result.unassigned,80000);
+ assert.equal(result.buckets.get('food'),10500);assert.equal(result.buckets.get('rent'),5000);
+ assert.equal(result.unassigned+[...result.buckets.values()].reduce((a,b)=>a+b,0),result.cash);
+});
 test('decimal money parsing is exact and rejects ambiguous values',()=>{
  assert.equal(cents('12.34'),1234);assert.equal(cents('-0.29'),-29);assert.equal(cents('0.1'),10);
  for(const value of ['1.005','1e3','1,000','$12','Infinity',''])assert.throws(()=>cents(value));
